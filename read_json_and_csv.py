@@ -29,7 +29,7 @@ def read_from_csv_to_int_array(csvfile):
         return [int(float(element)) for sublist in reader for element in sublist]
 
 
-def add_dicts_to_df(df, dicts,index):
+def add_dicts_to_df(df, dicts, index):
     """Given data stored as a list of dictionaries with keys corresponding to dataframe columns,
     add the values as rows to the dataframe
     """
@@ -52,20 +52,26 @@ def print_patients_by_code_older(df, code, age_older_than):
     print(patients)
 
 
-df_json = pd.DataFrame(columns=json_columns)
-df_json.set_index('ID', inplace=True)
+# Data preparation
+df_jsn = pd.DataFrame(columns=json_columns)
+df_jsn.set_index('ID', inplace=True)
 df_csv = pd.DataFrame(columns=csv_columns)
 df_csv.set_index('ID', inplace=True)
 
-jsonDictsFromFiles = [read_json_file(jsonFile) for jsonFile in find_files_in_dir_with_extension(section2DataDir, "json")]
+# Data read from files
+jsonDictsFromFiles = [read_json_file(jsonFile) for jsonFile in
+                      find_files_in_dir_with_extension(section2DataDir, "json")]
 csvDictsFromFiles = [dict(zip(csv_columns, read_from_csv_to_int_array(csvFile)))
                      for csvFile in find_files_in_dir_with_extension(section2DataDir, "csv")]
 
-df_json = add_dicts_to_df(df_json, jsonDictsFromFiles, 'ID')
+# Data saved to Pandas dataframes
+df_jsn = add_dicts_to_df(df_jsn, jsonDictsFromFiles, 'ID')
 df_csv = add_dicts_to_df(df_csv, csvDictsFromFiles, 'ID')
-df_combined = df_csv.join(df_json, on='ID')
+df_combined = df_csv.join(df_jsn, on='ID')  # Joined data by ID
 
-csv_mean = df_csv.mean(axis=0)  # Type: Series
+# Calculations on the data
+
+csv_mean = df_csv.mean(axis=0)  # Calculate mean of all columns. Result Type: Series
 print("*** Mean values for population ***")
 for column, value in csv_mean.iteritems():
     print(column, ":", value)
@@ -76,18 +82,6 @@ print_patients_by_code_older(df_legal_code_age, 597, 20)
 print_patients_by_code_older(df_legal_code_age, 597, 50)
 print_patients_by_code_older(df_legal_code_age, 530, 20)
 
-
 # Create and write the full data with no missing values allowed
-df_combined = df_combined.dropna(axis='index')
-df_combined.to_csv(output_csv)
-
-# print(df_combined)
-# print(df_combined.info())
-# Count and patients with Code ‘X’ over age ‘Y’ (X & Y are parameters)
-
-
-# pprint(dict_json)
-# print(df_json.head())
-# print(df_combined.info())
-# print("---")
-# print(df_combined)
+df_combined_nonan = df_combined.dropna(axis='index')
+df_combined_nonan.to_csv(output_csv)
