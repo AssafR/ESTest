@@ -1,0 +1,93 @@
+import json
+import csv
+import glob
+from pprint import pprint
+import pandas as pd
+
+section2DataDir = "./section2Data/"
+json_columns = ['ID', 'Code']
+csv_columns = ['ID', 'weight', 'height', 'age']
+output_csv = "combined.csv"
+
+
+def find_files_in_dir_with_extension(directory, extension):
+    return glob.glob(directory + "/*." + extension)
+
+
+def read_json_file(jsonFile):
+    with open(jsonFile) as data_file:
+        json_dict = json.load(data_file)
+        json_dict['Code'] = int(json_dict['Code'])
+        json_dict['ID'] = int(json_dict['ID'])
+        return json_dict
+
+
+def read_from_csv_to_int_array(csvfile):
+    """ Read from csv file and convert all values in scientific format to integer"""
+    with open(csvfile) as data_file:
+        reader = csv.reader(data_file, delimiter=',', quotechar='|')
+        return [int(float(element)) for sublist in reader for element in sublist]
+
+
+def add_dicts_to_df(df, dicts,index):
+    """Given data stored as a list of dictionaries with keys corresponding to dataframe columns,
+    add the values as rows to the dataframe
+    """
+    for dictionary in dicts:
+        new_df = pd.DataFrame.from_records([dictionary])
+        new_df.set_index(index, inplace=True)
+        df = df.append(new_df)
+    return df
+
+
+def patients_by_code_older(df, code, age_older_than):
+    df_filtered = df.loc[(df['age'] > age_older_than) & (df['Code'] == code)]
+    return df_filtered
+
+
+def print_patients_by_code_older(df, code, age_older_than):
+    patients = patients_by_code_older(df, code, age_older_than)
+    print("Number of patients:", patients.shape[0])
+    print("Patient data:")
+    print(patients)
+
+
+df_json = pd.DataFrame(columns=json_columns)
+df_json.set_index('ID', inplace=True)
+df_csv = pd.DataFrame(columns=csv_columns)
+df_csv.set_index('ID', inplace=True)
+
+jsonDictsFromFiles = [read_json_file(jsonFile) for jsonFile in find_files_in_dir_with_extension(section2DataDir, "json")]
+csvDictsFromFiles = [dict(zip(csv_columns, read_from_csv_to_int_array(csvFile)))
+                     for csvFile in find_files_in_dir_with_extension(section2DataDir, "csv")]
+
+df_json = add_dicts_to_df(df_json, jsonDictsFromFiles, 'ID')
+df_csv = add_dicts_to_df(df_csv, csvDictsFromFiles, 'ID')
+df_combined = df_csv.join(df_json, on='ID')
+
+csv_mean = df_csv.mean(axis=0)  # Type: Series
+print("*** Mean values for population ***")
+for column, value in csv_mean.iteritems():
+    print(column, ":", value)
+
+# Drop all rows where "Code" or "age" do not exist
+df_legal_code_age = df_combined.dropna(axis='index', subset=['Code', 'age'])
+print_patients_by_code_older(df_legal_code_age, 597, 20)
+print_patients_by_code_older(df_legal_code_age, 597, 50)
+print_patients_by_code_older(df_legal_code_age, 530, 20)
+
+
+# Create and write the full data with no missing values allowed
+df_combined = df_combined.dropna(axis='index')
+df_combined.to_csv(output_csv)
+
+# print(df_combined)
+# print(df_combined.info())
+# Count and patients with Code ‘X’ over age ‘Y’ (X & Y are parameters)
+
+
+# pprint(dict_json)
+# print(df_json.head())
+# print(df_combined.info())
+# print("---")
+# print(df_combined)
