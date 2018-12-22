@@ -47,9 +47,11 @@ def patients_by_code_older(df, code, age_older_than):
 
 def print_patients_by_code_older(df, code, age_older_than):
     patients = patients_by_code_older(df, code, age_older_than)
+    print("For code={0} and age older than {1}".format(code,age_older_than))
     print("Number of patients:", patients.shape[0])
     print("Patient data:")
     print(patients)
+    print("-------------")
 
 
 # Data preparation
@@ -75,12 +77,13 @@ csv_mean = df_csv.mean(axis=0)  # Calculate mean of all columns. Result Type: Se
 print("*** Mean values for population ***")
 for column, value in csv_mean.iteritems():
     print(column, ":", value)
+print()
 
 # Drop all rows where "Code" or "age" do not exist
 df_legal_code_age = df_combined.dropna(axis='index', subset=['Code', 'age'])
 print_patients_by_code_older(df_legal_code_age, 597, 20)
 print_patients_by_code_older(df_legal_code_age, 597, 50)
-print_patients_by_code_older(df_legal_code_age, 530, 20)
+print_patients_by_code_older(df_legal_code_age, 530, 36)
 
 # Create and write the full data with no missing values allowed
 df_combined_nonan = df_combined.dropna(axis='index')
